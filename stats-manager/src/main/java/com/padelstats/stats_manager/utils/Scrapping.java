@@ -35,6 +35,7 @@ public class Scrapping {
                 WebElement linkElement = playerElements.get(i);
                 String detailUrl = linkElement.getAttribute("href");
                 playerDetailUrls.add(detailUrl);
+                System.out.println();
             }
 
             saveUrlsToFile(playerDetailUrls, "player_detail_urls.txt");
@@ -45,11 +46,28 @@ public class Scrapping {
                 WebElement linkElement = playerElements.get(i);
                 String detailUrl = linkElement.getAttribute("href");
                 playerDetailUrls.add(detailUrl);
-                System.out.println(detailUrl);
             }
 
             saveUrlsToFile(playerDetailUrls, "player_detail_urls.txt");
 
+            WebElement loadMoreButton = driver.findElement(By.cssSelector("a.loadMoreRanking"));
+
+            for (int i = 0; i < 3; i++) {
+                loadMoreButton.click();
+
+                Thread.sleep(3000);
+            }
+
+            playerElements = driver.findElements(By.cssSelector(".data-title"));
+
+            for (int i = 0; i < 80; i++) {
+                WebElement linkElement = playerElements.get(i);
+                String detailUrl = linkElement.getAttribute("href");
+                playerDetailUrls.add(detailUrl);
+                System.out.println(detailUrl);
+            }
+
+            saveUrlsToFile(playerDetailUrls, "player_detail_urls.txt");
         } catch (InterruptedException | IOException e) {
             e.printStackTrace();
         } finally {
@@ -60,9 +78,7 @@ public class Scrapping {
 
     private static void saveUrlsToFile(List<String> urls, String fileName) throws IOException {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileName))) {
-            // Unir las URLs en una sola cadena separada por ';'
             String joinedUrls = String.join(";", urls);
-            // Escribir la cadena en el archivo
             writer.write(joinedUrls);
         }
     }
