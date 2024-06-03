@@ -1,13 +1,11 @@
 package com.padelstats.stats_manager.utils;
 
-import com.padelstats.stats_manager.entities.Jugador;
-import io.github.bonigarcia.wdm.WebDriverManager;
+import com.padelstats.stats_manager.entities.Jugadores;
 import org.openqa.selenium.*;
-import org.openqa.selenium.chrome.ChromeDriver;
 
 import java.io.*;
+import java.text.ParseException;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 public class Scrapping {
@@ -93,12 +91,12 @@ public class Scrapping {
                 loadMoreButton.click();
                 Thread.sleep(3000);
                 js.executeScript("""
-                        window.scrollBy({
-                            top: 1200,
-                            left: 0,
-                            behavior: 'smooth'
-                        });
-                    """);
+                            window.scrollBy({
+                                top: 1200,
+                                left: 0,
+                                behavior: 'smooth'
+                            });
+                        """);
             }
 
             js.executeScript("""
@@ -151,8 +149,7 @@ public class Scrapping {
             e.printStackTrace();
         } catch (Exception e) {
             System.out.println("Error leyendo el archivo");
-        }
-        finally {
+        } finally {
             if (reader != null) {
                 try {
                     reader.close();
@@ -165,62 +162,105 @@ public class Scrapping {
         return urls;
     }
 
-    public static List<Jugador> getPlayerInfoFromUrls(List<String> urls, WebDriver driver) {
-        List<Jugador> playersInfo = new ArrayList<>();
+    public static List<Jugadores> getPlayerInfoFromUrls(List<String> urls, WebDriver driver) {
+        List<Jugadores> playersInfo = new ArrayList<>();
         driver.manage().window().maximize();
+
         for (String url : urls) {
             driver.get(url);
             try {
                 Thread.sleep(2000);
+                Jugadores jugador = extractPlayerInfo(driver);
+                System.out.println(jugador);
+                playersInfo.add(jugador);
             } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
                 e.printStackTrace();
+            } catch (NumberFormatException | NoSuchElementException | TimeoutException e) {
+                e.printStackTrace();
+                // Handle specific exceptions or log them as needed
             }
-
-            String textoRanking = driver.findElement(By.cssSelector(".player__number")).getText().split("\\r?\\n")[0];
-            int ranking = textoRanking != null ? Integer.parseInt(textoRanking) : 0;
-            int points = Integer.parseInt(driver.findElement(By.cssSelector(".player__pointTNumber")).getText());
-            String name = driver.findElement(By.cssSelector(".player__name")).getText();
-            String country = driver.findElement(By.cssSelector(".player__country")).getText();
-            Jugador j = new Jugador(ranking, points, name, country);
-            playersInfo.add(j);
-            System.out.println(j);
-            /*String side = driver.findElement(By.cssSelector(".player__name")).getText();
-            //String partner = driver.findElement(By.cssSelector(".player__name")).getText();
-            String birthDate = driver.findElement(By.cssSelector(".player__name")).getText();
-            String birthPlace = driver.findElement(By.cssSelector(".player__name")).getText();
-            String height = driver.findElement(By.cssSelector(".player__name")).getText();
-            String playedMatches = driver.findElement(By.cssSelector(".player__name")).getText();
-            int wonMatches = Integer.parseInt(driver.findElement(By.cssSelector(".player__name")).getText());
-            int lostMatches = Integer.parseInt(driver.findElement(By.cssSelector(".player__name")).getText());
-            int winningStreak = Integer.parseInt(driver.findElement(By.cssSelector(".player__name")).getText());
-            //double effectivity = Double.parseDouble(driver.findElement(By.cssSelector(".player__name")).getText());
-            List<WebElement> countableRounds = driver.findElements(By.cssSelector(".player__name"));*/
-
-
-
-            /*private int posicionRanking;
-    private int puntos;
-    private String nacionalidad;
-    private String posicionPista;
-    private String nombre;
-    @OneToOne
-    @JoinColumn(name = "pareja_id")
-    private Jugador pareja;
-    private String fechaNacimiento;
-    private double altura;
-    private String lugarNac;
-    private int partidosJugados;
-    private int partidosGanados;
-    private int partidosPerdidos;
-    private int victoriasConsecutivas;
-    private double efectividad;
-    @OneToMany
-    private List<RondaPuntuable> desglosePuntos;
-*/
-            //Jugador playerInfo = new Jugador(playerName, playerRanking);
-            //playersInfo.add(playerInfo);
         }
+
         return playersInfo;
+    }
+
+    private static Jugadores extractPlayerInfo(WebDriver driver) {
+        int puestoRanking = parseRanking(driver.findElement(By.cssSelector(".player__number")).getText());
+        int puntosRanking = Integer.parseInt(driver.findElement(By.cssSelector(".player__pointTNumber")).getText());
+        String nombre = driver.findElement(By.cssSelector(".player__name")).getText();
+        String nacionalidad = driver.findElement(By.cssSelector(".player__country")).getText();
+        String rutaBandera = getRutaBandera(nacionalidad);
+
+        WebElement infoAdicional = driver.findElement(By.cssSelector(".section__additionalInfo"));
+        String nombreCompanyero = infoAdicional.findElement(By.cssSelector(".additionalInfo__paired .content a")).getText();
+        String ladoPista = infoAdicional.findElement(By.cssSelector(".additionalInfo__hand .content")).getText();
+        double altura = Double.parseDouble(infoAdicional.findElement(By.cssSelector(".additionalInfo__height .additionalInfo__data")).getText());
+        String lugarNacimiento = infoAdicional.findElement(By.cssSelector(".additionalInfo__born .additionalInfo__data")).getText();
+        String fechaNacimiento = infoAdicional.findElement(By.cssSelector(".additionalInfo__birth .additionalInfo__data")).getText();
+
+        WebElement infoPartidos = driver.findElement(By.cssSelector(".section__matchPlayer"));
+        int partidosJugados = Integer.parseInt(infoPartidos.findElement(By.cssSelector(".matchPlayer__played span")).getText());
+        int partidosGanados = Integer.parseInt(infoPartidos.findElement(By.cssSelector(".matchPlayer__won span")).getText());
+        int victoriasConsecutivas = Integer.parseInt(infoPartidos.findElement(By.cssSelector(".matchPlayer__victories span")).getText());
+
+        return new Jugadores(puestoRanking, puntosRanking, nombre, nacionalidad, rutaBandera, ladoPista, 0,
+                fechaNacimiento, altura, lugarNacimiento, partidosJugados, partidosGanados, victoriasConsecutivas, "");
+    }
+
+    private static int parseRanking(String textoRanking) {
+        String ranking = textoRanking.split("\\r?\\n")[0];
+        return ranking != null ? Integer.parseInt(ranking) : 0;
+    }
+
+    private static String getRutaBandera(String nac) {
+        String rutaBandera = "img/banderas/";
+        switch (nac) {
+            case "ESP":
+                rutaBandera += "Spain";
+                break;
+            case "ARG":
+                rutaBandera += "Argentina";
+                break;
+            case "BRA":
+                rutaBandera += "Brasil";
+                break;
+            case "BEL":
+                rutaBandera += "Belgica";
+                break;
+            case "CHL":
+                rutaBandera += "Chile";
+                break;
+            case "EGY":
+                rutaBandera += "Egipto";
+                break;
+            case "FRA":
+                rutaBandera += "Francia";
+                break;
+            case "ITA":
+                rutaBandera += "Italia";
+                break;
+            case "NLD":
+                rutaBandera += "PaisesBajos";
+                break;
+            case "PRT":
+                rutaBandera += "Portugal";
+                break;
+            case "QAT":
+                rutaBandera += "Catar";
+                break;
+            case "GBR":
+                rutaBandera += "ReinoUnido";
+                break;
+            case "SWE":
+                rutaBandera += "Suecia";
+                break;
+            default:
+                rutaBandera += "NotFound";
+                break;
+        }
+        return rutaBandera;
+
     }
 
 }
