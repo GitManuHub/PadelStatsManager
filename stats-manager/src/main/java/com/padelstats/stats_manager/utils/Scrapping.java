@@ -169,7 +169,7 @@ public class Scrapping {
         for (String url : urls) {
             driver.get(url);
             try {
-                Thread.sleep(2000);
+                Thread.sleep(200);
                 Jugadores jugador = extractPlayerInfo(driver);
                 System.out.println(jugador);
                 playersInfo.add(jugador);
