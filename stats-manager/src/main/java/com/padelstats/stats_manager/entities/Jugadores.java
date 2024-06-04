@@ -1,6 +1,7 @@
 package com.padelstats.stats_manager.entities;
 
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -13,6 +14,7 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Entity
@@ -24,19 +26,47 @@ public class Jugadores {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
+
+    @Column(name = "posicion_ranking")
     private int posicionRanking;
+
+    @Column(name = "puntos")
     private int puntos;
+
+    @Column(name = "nombre")
     private String nombre;
+
+    @Column(name = "nacionalidad")
     private String nacionalidad;
+
+    @Column(name = "ruta_bandera")
     private String rutaBandera;
+
+    @Column(name = "posicion_pista")
     private String posicionPista;
+
+    @Column(name = "pareja")
     private int pareja;
+
+    @Column(name = "fecha_nac")
     private String fechaNac;
+
+    @Column(name = "altura")
     private double altura;
+
+    @Column(name = "lugar_nac")
     private String lugarNac;
+
+    @Column(name = "partidos_jugados")
     private int partidosJugados;
+
+    @Column(name = "partidos_ganados")
     private int partidosGanados;
+
+    @Column(name = "victorias_consecutivas")
     private int victoriasConsecutivas;
+
+    @Column(name = "ruta_foto")
     private String rutaFoto;
 
     public Jugadores(int posicionRanking, int puntos, String nombre, String nacionalidad, String rutaBandera,

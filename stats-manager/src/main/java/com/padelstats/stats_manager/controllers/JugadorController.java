@@ -43,6 +43,17 @@ public class JugadorController {
         return new ResponseEntity<>(nuevoJugador, HttpStatus.CREATED);
     }
 
+    @PostMapping("insertarTodos")
+    public ResponseEntity<List<Jugadores>> insertarJugadores(@RequestBody List<Jugadores> jugadores) {
+        try {
+            List<Jugadores> nuevosJugadores = iJugadorService.saveAll(jugadores);
+            return new ResponseEntity<>(nuevosJugadores, HttpStatus.CREATED);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> borrarJugador(@PathVariable("id") Long id) {
         iJugadorService.deleteById(id);
