@@ -1,5 +1,6 @@
 package com.padelstats.stats_manager.utils;
 
+import com.padelstats.stats_manager.controllers.JugadorController;
 import com.padelstats.stats_manager.entities.Jugadores;
 import org.openqa.selenium.*;
 
@@ -9,6 +10,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Scrapping {
+
+    public static String FILENAME = "player_detail_urls.txt";
+
+    public static List<Jugadores> scrappeoCompleto(WebDriver driver) {
+        scrapRankingPP(driver);
+        List<String> urls = readUrlsFromFile(FILENAME);
+        return getPlayerInfoFromUrls(urls, driver);
+    }
 
     public static void scrapRankingPP(WebDriver driver) {
         try {
@@ -99,14 +108,14 @@ public class Scrapping {
                         """);
             }
 
-            js.executeScript("""
+            /*js.executeScript("""
                         window.scrollBy({
                             top: 200,
                             left: 0,
                             behavior: 'smooth'
                         });
                     """);
-            Thread.sleep(3000);
+            Thread.sleep(3000);*/
 
             playerElements = driver.findElements(By.cssSelector(".data-title"));
 
@@ -120,8 +129,6 @@ public class Scrapping {
             saveUrlsToFile(playerDetailUrls, "player_detail_urls.txt");
         } catch (InterruptedException | IOException e) {
             e.printStackTrace();
-        } finally {
-            driver.quit();
         }
     }
 
@@ -168,14 +175,15 @@ public class Scrapping {
 
         for (String url : urls) {
             driver.get(url);
+            driver.manage().window().maximize();
             try {
-                Thread.sleep(200);
+                //Thread.sleep(200);
                 Jugadores jugador = extractPlayerInfo(driver);
                 System.out.println(jugador);
                 playersInfo.add(jugador);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                e.printStackTrace();
+            //} catch (InterruptedException e) {
+                //Thread.currentThread().interrupt();
+                //e.printStackTrace();
             } catch (NumberFormatException | NoSuchElementException | TimeoutException e) {
                 e.printStackTrace();
                 // Handle specific exceptions or log them as needed
@@ -191,6 +199,8 @@ public class Scrapping {
         String nombre = driver.findElement(By.cssSelector(".player__name")).getText();
         String nacionalidad = driver.findElement(By.cssSelector(".player__country")).getText();
         String rutaBandera = getRutaBandera(nacionalidad);
+
+        String imagen = driver.findElement(By.cssSelector(".slider__img.player__img > img")).getAttribute("src");
 
         WebElement infoAdicional = driver.findElement(By.cssSelector(".section__additionalInfo"));
         String nombreCompanyero = infoAdicional.findElement(By.cssSelector(".additionalInfo__paired .content a")).getText();
