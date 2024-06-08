@@ -1,13 +1,13 @@
 package com.padelstats.stats_manager.utils;
 
-import com.padelstats.stats_manager.controllers.JugadorController;
 import com.padelstats.stats_manager.entities.Jugadores;
 import org.openqa.selenium.*;
 
 import java.io.*;
-import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
+
+import static com.padelstats.stats_manager.utils.Parsing.*;
 
 public class Scrapping {
 
@@ -171,30 +171,38 @@ public class Scrapping {
 
     public static List<Jugadores> getPlayerInfoFromUrls(List<String> urls, WebDriver driver) {
         List<Jugadores> playersInfo = new ArrayList<>();
+        driver.get(urls.get(0));
         driver.manage().window().maximize();
 
         for (String url : urls) {
-            driver.get(url);
-            driver.manage().window().maximize();
+            driver.navigate().to(url);
+            //driver.manage().window().maximize();
             try {
                 //Thread.sleep(200);
                 Jugadores jugador = extractPlayerInfo(driver);
+                jugador.setId(getClaveDesdeUrl(url));
                 System.out.println(jugador);
                 playersInfo.add(jugador);
             //} catch (InterruptedException e) {
                 //Thread.currentThread().interrupt();
                 //e.printStackTrace();
-            } catch (NumberFormatException | NoSuchElementException | TimeoutException e) {
-                e.printStackTrace();
                 // Handle specific exceptions or log them as needed
+            } catch(NoSuchElementException | TimeoutException e) {
+                e.printStackTrace();
             }
         }
 
         return playersInfo;
     }
 
+
+
     private static Jugadores extractPlayerInfo(WebDriver driver) {
+
         int puestoRanking = parseRanking(driver.findElement(By.cssSelector(".player__number")).getText());
+
+        String variacionPuesto = getVariacionRanking(driver);
+
         int puntosRanking = Integer.parseInt(driver.findElement(By.cssSelector(".player__pointTNumber")).getText());
         String nombre = driver.findElement(By.cssSelector(".player__name")).getText();
         String nacionalidad = driver.findElement(By.cssSelector(".player__country")).getText();
@@ -203,19 +211,27 @@ public class Scrapping {
         String imagen = driver.findElement(By.cssSelector(".slider__img.player__img > img")).getAttribute("src");
 
         WebElement infoAdicional = driver.findElement(By.cssSelector(".section__additionalInfo"));
-        String nombreCompanyero = infoAdicional.findElement(By.cssSelector(".additionalInfo__paired .content a")).getText();
+
+        String clavePareja;
+        try {
+            clavePareja = getClaveDesdeUrl(infoAdicional.findElement(By.cssSelector(".additionalInfo__paired .content a")).getAttribute("href"));
+        } catch (NoSuchElementException e) {
+            clavePareja = "sin-pareja";
+        }
+
         String ladoPista = infoAdicional.findElement(By.cssSelector(".additionalInfo__hand .content")).getText();
-        double altura = Double.parseDouble(infoAdicional.findElement(By.cssSelector(".additionalInfo__height .additionalInfo__data")).getText());
+        double altura = tryParseDouble(infoAdicional.findElement(By.cssSelector(".additionalInfo__height .additionalInfo__data")).getText());
         String lugarNacimiento = infoAdicional.findElement(By.cssSelector(".additionalInfo__born .additionalInfo__data")).getText();
         String fechaNacimiento = infoAdicional.findElement(By.cssSelector(".additionalInfo__birth .additionalInfo__data")).getText();
 
         WebElement infoPartidos = driver.findElement(By.cssSelector(".section__matchPlayer"));
-        int partidosJugados = Integer.parseInt(infoPartidos.findElement(By.cssSelector(".matchPlayer__played span")).getText());
-        int partidosGanados = Integer.parseInt(infoPartidos.findElement(By.cssSelector(".matchPlayer__won span")).getText());
-        int victoriasConsecutivas = Integer.parseInt(infoPartidos.findElement(By.cssSelector(".matchPlayer__victories span")).getText());
+        int partidosJugados = tryParseInt(infoPartidos.findElement(By.cssSelector(".matchPlayer__played span")).getText());
+        int partidosGanados = tryParseInt(infoPartidos.findElement(By.cssSelector(".matchPlayer__won span")).getText());
+        int victoriasConsecutivas = tryParseInt(infoPartidos.findElement(By.cssSelector(".matchPlayer__victories span")).getText());
 
-        return new Jugadores(puestoRanking, puntosRanking, nombre, nacionalidad, rutaBandera, ladoPista, 0,
-                fechaNacimiento, altura, lugarNacimiento, partidosJugados, partidosGanados, victoriasConsecutivas, "");
+        return new Jugadores(puestoRanking, variacionPuesto,puntosRanking, nombre, nacionalidad, rutaBandera, ladoPista, new Jugadores(clavePareja),
+                fechaNacimiento, altura, lugarNacimiento, partidosJugados, partidosGanados, victoriasConsecutivas, imagen);
+
     }
 
     private static int parseRanking(String textoRanking) {

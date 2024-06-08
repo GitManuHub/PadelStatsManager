@@ -7,6 +7,6 @@ import org.springframework.stereotype.Service;
 
 @RepositoryRestResource(path = "jugadores",collectionResourceRel = "jugadores")
 @Service
-public interface IJugadorService extends JpaRepository<Jugadores, Long> {
+public interface IJugadorService extends JpaRepository<Jugadores, String> {
 
 }

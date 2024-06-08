@@ -24,11 +24,15 @@ import java.util.List;
 public class Jugadores {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int id;
+    private String id;
+    /*@GeneratedValue(strategy = GenerationType.TABLE)
+    private int id;*/
 
     @Column(name = "posicion_ranking")
     private int posicionRanking;
+
+    @Column(name = "variacion_puesto")
+    private String variacionPuesto;
 
     @Column(name = "puntos")
     private int puntos;
@@ -45,8 +49,9 @@ public class Jugadores {
     @Column(name = "posicion_pista")
     private String posicionPista;
 
-    @Column(name = "pareja")
-    private int pareja;
+    @OneToOne
+    @JoinColumn(name = "pareja_id")
+    private Jugadores pareja;
 
     @Column(name = "fecha_nac")
     private String fechaNac;
@@ -69,10 +74,11 @@ public class Jugadores {
     @Column(name = "ruta_foto")
     private String rutaFoto;
 
-    public Jugadores(int posicionRanking, int puntos, String nombre, String nacionalidad, String rutaBandera,
-                     String posicionPista, int pareja, String fechaNac, double altura, String lugarNac,
+    public Jugadores(int posicionRanking, String variacionPuesto, int puntos, String nombre, String nacionalidad, String rutaBandera,
+                     String posicionPista, Jugadores pareja, String fechaNac, double altura, String lugarNac,
                      int partidosJugados, int partidosGanados, int victoriasConsecutivas, String rutaFoto) {
         this.posicionRanking = posicionRanking;
+        this.variacionPuesto = variacionPuesto;
         this.puntos = puntos;
         this.nombre = nombre;
         this.nacionalidad = nacionalidad;
@@ -86,5 +92,9 @@ public class Jugadores {
         this.partidosGanados = partidosGanados;
         this.victoriasConsecutivas = victoriasConsecutivas;
         this.rutaFoto = rutaFoto;
+    }
+
+    public Jugadores(String id) {
+        this.id = id;
     }
 }
