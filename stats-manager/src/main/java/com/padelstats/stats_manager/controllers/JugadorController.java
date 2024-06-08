@@ -15,7 +15,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @CrossOrigin(origins = {"*"})
 @RestController
@@ -31,7 +33,7 @@ public class JugadorController {
     }
 
     @GetMapping(value = "/{id}", produces = "application/json")
-    public ResponseEntity<Jugadores> jugadorPorId(@PathVariable("id") Long id) {
+    public ResponseEntity<Jugadores> jugadorPorId(@PathVariable("id") String id) {
         Jugadores jugador = iJugadorService.findById(id).orElse(null);
         HttpStatus status = jugador != null ? HttpStatus.OK : HttpStatus.NOT_FOUND;
         return new ResponseEntity<>(jugador, status);
@@ -46,7 +48,33 @@ public class JugadorController {
     @PostMapping("insertarTodos")
     public ResponseEntity<List<Jugadores>> insertarJugadores(@RequestBody List<Jugadores> jugadores) {
         try {
-            List<Jugadores> nuevosJugadores = iJugadorService.saveAll(jugadores);
+            /*List<Jugadores> nuevosJugadores = iJugadorService.saveAll(jugadores);
+            return new ResponseEntity<>(nuevosJugadores, HttpStatus.CREATED);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }*/
+            List<Jugadores> jugadoresConPareja = new ArrayList<>(jugadores);
+            List<Jugadores> jugadoresSinPareja = jugadores.stream()
+                    .peek(jugador -> jugador.setPareja(null))
+                    .toList();
+            List<Jugadores> nuevosJugadores = iJugadorService.saveAll(jugadoresSinPareja);
+
+            for (Jugadores jugador : jugadores) {
+                if (jugador.getPareja() != null) {
+                    Optional<Jugadores> jugadorPareja = iJugadorService.findById(jugador.getPareja().getId());
+                    if (jugadorPareja.isPresent()) {
+                        jugadorPareja.get().setPareja(jugador);
+                        iJugadorService.save(jugadorPareja.get());
+                    }
+                    Jugadores jugadorActualizado = iJugadorService.findById(jugador.getId()).orElse(null);
+                    if (jugadorActualizado != null) {
+                        jugadorActualizado.setPareja(jugador.getPareja());
+                        iJugadorService.save(jugadorActualizado);
+                    }
+                }
+            }
+
             return new ResponseEntity<>(nuevosJugadores, HttpStatus.CREATED);
         } catch (Exception e) {
             e.printStackTrace();
@@ -54,14 +82,9 @@ public class JugadorController {
         }
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> borrarJugador(@PathVariable("id") Long id) {
-        iJugadorService.deleteById(id);
-        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-    }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Jugadores> modificarJugador(@PathVariable("id") Long id, @RequestBody Jugadores jugNue) {
+    public ResponseEntity<Jugadores> modificarJugador(@PathVariable("id") String id, @RequestBody Jugadores jugNue) {
         Jugadores jugExis = iJugadorService.findById(id).orElse(null);
         if (jugExis != null) {
             jugExis.setNombre(!jugNue.getNombre().equals(jugExis.getNombre()) ?
@@ -73,6 +96,12 @@ public class JugadorController {
         } else {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> borrarJugador(@PathVariable("id") String id) {
+        iJugadorService.deleteById(id);
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 
         /*@Autowired
