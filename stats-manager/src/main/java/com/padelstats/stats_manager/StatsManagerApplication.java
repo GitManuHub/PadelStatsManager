@@ -15,6 +15,8 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.padelstats.stats_manager.utils.FilesManagement.readUrlsFromFile;
+
 
 @SpringBootApplication
 @EnableScheduling
@@ -23,7 +25,7 @@ public class StatsManagerApplication {
 
 	public static void main(String[] args) {
 		ApplicationContext context = SpringApplication.run(StatsManagerApplication.class, args);
-//
+
 //		WebDriverManager.chromedriver().setup();
 //
 //		WebDriver driver = new ChromeDriver();
@@ -31,7 +33,7 @@ public class StatsManagerApplication {
 //		try {
 //			Scrapping.scrapRankingPP(driver);
 //
-//			List<String> urls = Scrapping.readUrlsFromFile(FILENAME);
+//			List<String> urls = readUrlsFromFile(FILENAME);
 //			List<String> urlsPrueba = new ArrayList<>();
 //			urlsPrueba.add("https://www.padelfip.com/player/arturo-coello/");
 //			urlsPrueba.add("https://www.padelfip.com/player/agustin-tapia/");

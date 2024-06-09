@@ -7,6 +7,8 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.padelstats.stats_manager.utils.FilesManagement.readUrlsFromFile;
+import static com.padelstats.stats_manager.utils.FilesManagement.saveUrlsToFile;
 import static com.padelstats.stats_manager.utils.Parsing.*;
 
 public class Scrapping {
@@ -132,43 +134,6 @@ public class Scrapping {
         }
     }
 
-    private static void saveUrlsToFile(List<String> urls, String fileName) throws IOException {
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileName))) {
-            String joinedUrls = String.join(";", urls);
-            writer.write(joinedUrls);
-        }
-    }
-
-    public static List<String> readUrlsFromFile(String filename) {
-        List<String> urls = new ArrayList<>();
-        BufferedReader reader = null;
-
-        try {
-            reader = new BufferedReader(new FileReader(filename));
-            String line;
-            while ((line = reader.readLine()) != null) {
-                String[] urlArray = line.split(";");
-                for (String url : urlArray) {
-                    urls.add(url.trim());
-                }
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (Exception e) {
-            System.out.println("Error leyendo el archivo");
-        } finally {
-            if (reader != null) {
-                try {
-                    reader.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-
-        return urls;
-    }
-
     public static List<Jugadores> getPlayerInfoFromUrls(List<String> urls, WebDriver driver) {
         List<Jugadores> playersInfo = new ArrayList<>();
         driver.get(urls.get(0));
@@ -195,8 +160,6 @@ public class Scrapping {
         return playersInfo;
     }
 
-
-
     private static Jugadores extractPlayerInfo(WebDriver driver) {
 
         int puestoRanking = parseRanking(driver.findElement(By.cssSelector(".player__number")).getText());
@@ -206,7 +169,7 @@ public class Scrapping {
         int puntosRanking = Integer.parseInt(driver.findElement(By.cssSelector(".player__pointTNumber")).getText());
         String nombre = driver.findElement(By.cssSelector(".player__name")).getText();
         String nacionalidad = driver.findElement(By.cssSelector(".player__country")).getText();
-        String rutaBandera = getRutaBandera(nacionalidad);
+        String rutaBandera = driver.findElement(By.cssSelector("div.slider__nation.player__nation > div > img")).getAttribute("src");
 
         String imagen = driver.findElement(By.cssSelector(".slider__img.player__img > img")).getAttribute("src");
 
@@ -216,7 +179,7 @@ public class Scrapping {
         try {
             clavePareja = getClaveDesdeUrl(infoAdicional.findElement(By.cssSelector(".additionalInfo__paired .content a")).getAttribute("href"));
         } catch (NoSuchElementException e) {
-            clavePareja = "sin-pareja";
+            clavePareja = null;
         }
 
         String ladoPista = infoAdicional.findElement(By.cssSelector(".additionalInfo__hand .content")).getText();
@@ -288,5 +251,7 @@ public class Scrapping {
         return rutaBandera;
 
     }
+
+
 
 }
