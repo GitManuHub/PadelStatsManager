@@ -1,7 +1,16 @@
 package com.padelstats.stats_manager.utils;
 
+import ch.qos.logback.core.joran.conditional.ThenAction;
 import com.padelstats.stats_manager.entities.Jugadores;
+import com.padelstats.stats_manager.entities.Partidos;
+import com.padelstats.stats_manager.entities.Rondas;
+import com.padelstats.stats_manager.entities.Sets;
+import com.padelstats.stats_manager.entities.Torneos;
+import com.padelstats.stats_manager.services.TorneosService;
+import io.github.bonigarcia.wdm.WebDriverManager;
 import org.openqa.selenium.*;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -14,6 +23,9 @@ import static com.padelstats.stats_manager.utils.Parsing.*;
 public class Scrapping {
 
     public static String FILENAME = "player_detail_urls.txt";
+
+    @Autowired
+    private TorneosService torneosService;
 
     public static List<Jugadores> scrappeoCompleto(WebDriver driver) {
         scrapRankingPP(driver);
@@ -148,11 +160,11 @@ public class Scrapping {
                 jugador.setId(getClaveDesdeUrl(url));
                 System.out.println(jugador);
                 playersInfo.add(jugador);
-            //} catch (InterruptedException e) {
+                //} catch (InterruptedException e) {
                 //Thread.currentThread().interrupt();
                 //e.printStackTrace();
                 // Handle specific exceptions or log them as needed
-            } catch(NoSuchElementException | TimeoutException e) {
+            } catch (NoSuchElementException | TimeoutException e) {
                 e.printStackTrace();
             }
         }
@@ -192,7 +204,7 @@ public class Scrapping {
         int partidosGanados = tryParseInt(infoPartidos.findElement(By.cssSelector(".matchPlayer__won span")).getText());
         int victoriasConsecutivas = tryParseInt(infoPartidos.findElement(By.cssSelector(".matchPlayer__victories span")).getText());
 
-        return new Jugadores(puestoRanking, variacionPuesto,puntosRanking, nombre, nacionalidad, rutaBandera, ladoPista, new Jugadores(clavePareja),
+        return new Jugadores(puestoRanking, variacionPuesto, puntosRanking, nombre, nacionalidad, rutaBandera, ladoPista, new Jugadores(clavePareja),
                 fechaNacimiento, altura, lugarNacimiento, partidosJugados, partidosGanados, victoriasConsecutivas, imagen);
 
     }
@@ -253,5 +265,132 @@ public class Scrapping {
     }
 
 
+    public static List<Partidos> scrapTorneoCompleto(WebDriver driver, String urlTorneo) {
+        String urlRonda = scrapRounds(driver, urlTorneo);
+        List<String> urlsRondas = parseUrlRonda(urlRonda);
+        List<Partidos> partidos = new ArrayList<>();
 
+        List<Partidos> partidosRonda = new ArrayList<>();
+        for (String ronda : urlsRondas) {
+            partidos = scrapContenidoRonda(driver, ronda);
+            if (partidos != null) {
+                partidosRonda.addAll(partidos);
+            }
+        }
+
+        partidosRonda.forEach(p -> System.out.println("Partidos Ronda: " + p));
+        System.out.println(partidosRonda.size());
+
+        return !partidosRonda.isEmpty() ? partidosRonda : null;
+
+
+
+    }
+
+    public static void scrapPartidosDeUnaRonda(WebDriver driver, String urlRondas) {
+        driver.get(urlRondas);
+
+    }
+
+    public static String scrapRounds(WebDriver driver, String url) {
+        String resultUrl = null;
+        try {
+            driver.get(url);
+            driver.manage().window().maximize();
+            resultUrl = driver.findElement(By.cssSelector("#event-tab-content-7 > iframe")).getAttribute("src");
+        } catch (NoSuchElementException e) {
+            e.printStackTrace();
+        }
+
+        return resultUrl;
+    }
+
+    public static List<Partidos> scrapContenidoRonda(WebDriver driver, String url) {
+        List<Partidos> partidos = new ArrayList<>();
+        try {
+            driver.get(url);
+            driver.manage().window().maximize();
+
+            List<WebElement> partidosElements = driver.findElements(By.cssSelector("#container > div:nth-child(2) > div"));
+            for (WebElement partidoElement : partidosElements) {
+                Partidos partido = new Partidos();
+
+
+                WebElement ronda = partidoElement.findElement(By.cssSelector("small"));
+                WebElement categoria = ronda.findElement(By.cssSelector("b"));
+                String nombreRonda = ronda.getText().replace(categoria.getText(), "").trim();
+
+                Rondas rondaPartido = new Rondas();
+                rondaPartido.setNombre(nombreRonda);
+                partido.setRonda(rondaPartido);
+
+                List<WebElement> jugadores = partidoElement.findElements(By.cssSelector(".line-thin"));
+
+                String jugador1 = Parsing.quitarRanking(jugadores.get(0).getText());
+                String jugador2 = Parsing.quitarRanking(jugadores.get(1).getText());
+                String jugador3 = Parsing.quitarRanking(jugadores.get(2).getText());
+                String jugador4 = Parsing.quitarRanking(jugadores.get(3).getText());
+
+                partido.setJugador1(new Jugadores("", jugador1));
+                partido.setJugador2(new Jugadores("", jugador2));
+                partido.setJugador3(new Jugadores("", jugador3));
+                partido.setJugador4(new Jugadores("", jugador4));
+
+                List<WebElement> sets = partidoElement.findElements(By.cssSelector(".set"));
+
+                List<WebElement> setsPareja1 = partidoElement.findElements(By.cssSelector("tr.scorebox-sep-bottom .set-completed"));
+                List<WebElement> setsPareja2 = partidoElement.findElements(By.cssSelector("tr:nth-of-type(3) .set-completed"));
+                List<Sets> setsList = new ArrayList<>();
+                for (int i = 0; i < setsPareja1.size(); i++) {
+                    Sets set = new Sets();
+                    set.setSetNumero(i + 1);
+                    set.setPuntosPareja1(Integer.parseInt(setsPareja1.get(i).getText().replaceAll("[^\\d]", "").substring(0, 1)));
+                    set.setPuntosPareja2(Integer.parseInt(setsPareja2.get(i).getText().replaceAll("[^\\d]", "").substring(0, 1)));
+                    set.setPartido(partido);
+                    setsList.add(set);
+                }
+
+                partido.setSets(setsList);
+                int parejaGanadoraId;
+                try {
+                    WebElement parejaGanadora = partidoElement.findElements(By.cssSelector("tr")).get(1);
+                    parejaGanadoraId = parejaGanadora.findElement(By.cssSelector(".fa-check.check-primary")) != null ? 1 : 2;
+                } catch (NoSuchElementException e) {
+                    parejaGanadoraId = 2;
+                }
+
+                //int parejaGanadoraId = partidoElement.findElement(By.cssSelector(".fa-check.check-primary")) != null ? 1 : 2;
+                partido.setParejaGanadoraId(parejaGanadoraId);
+
+                /*System.out.println(partido);
+
+                partido.getSets().forEach(System.out::println);*/
+                partidos.add(partido);
+            }
+
+        } catch (NoSuchElementException e) {
+            e.printStackTrace();
+            return null;
+        }
+
+        return partidos;
+    }
+
+    private static Sets getSets(List<WebElement> sets, int i, Partidos partido) {
+        String parejaUno = sets.get(i).getText();
+        if (sets.get(i).getText().contains("-")) {
+            parejaUno = parejaUno.replace("-", "0");
+        }
+
+        String parejaDos = sets.get(i).getText();
+        if (sets.get(i).getText().contains("-")) {
+            parejaDos = parejaDos.replace("-", "0");
+        }
+        Sets set = new Sets();
+        set.setSetNumero((i / 2) + 1);
+        set.setPuntosPareja1(Integer.parseInt(parejaUno.replaceAll("[^\\d]", "").substring(0, 1)));
+        set.setPuntosPareja2(Integer.parseInt(parejaDos.replaceAll("[^\\d]", "").substring(0, 1)));
+        set.setPartido(partido);
+        return set;
+    }
 }

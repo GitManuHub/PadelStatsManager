@@ -1,6 +1,8 @@
 package com.padelstats.stats_manager.entities;
 
 import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
@@ -16,11 +18,18 @@ import lombok.ToString;
 @ToString
 public class Rondas {
     @Id
-    private String id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private int id;
     private String nombre;
 
     @ManyToOne
     @JoinColumn(name = "torneo_id")
     private Torneos torneo;
 
+    @Override
+    public String toString() {
+        return "Rondas{" +
+                "nombre='" + nombre + '\'' +
+                '}';
+    }
 }

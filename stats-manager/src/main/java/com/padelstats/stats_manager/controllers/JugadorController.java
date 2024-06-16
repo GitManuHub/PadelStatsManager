@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.ArrayList;
@@ -39,13 +40,13 @@ public class JugadorController {
         return new ResponseEntity<>(jugador, status);
     }
 
-    @PostMapping("insertar")
+    @PostMapping("/insertar")
     public ResponseEntity<Jugadores> insertarJugador(@RequestBody Jugadores jugador) {
         Jugadores nuevoJugador = iJugadorService.save(jugador);
         return new ResponseEntity<>(nuevoJugador, HttpStatus.CREATED);
     }
 
-    @PostMapping("insertarTodos")
+    @PostMapping("/insertarTodos")
     public ResponseEntity<List<Jugadores>> insertarJugadores(@RequestBody List<Jugadores> jugadores) {
         try {
             /*List<Jugadores> nuevosJugadores = iJugadorService.saveAll(jugadores);
@@ -102,6 +103,16 @@ public class JugadorController {
     public ResponseEntity<Void> borrarJugador(@PathVariable("id") String id) {
         iJugadorService.deleteById(id);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    }
+
+    @GetMapping("/buscarPorNombre")
+    public ResponseEntity<String> getJugadorIdByNombreSimilar(@RequestParam String nombre) {
+        String[] partesNombre = nombre.split(" ");
+        String letra = partesNombre[0];
+        String apellido = partesNombre[1];
+        String jugadorId = iJugadorService.findJugadorIdByNombreSimilar(letra, apellido);
+        HttpStatus status = jugadorId != null ? HttpStatus.OK : HttpStatus.NOT_FOUND;
+        return new ResponseEntity<>(jugadorId, status);
     }
 
         /*@Autowired

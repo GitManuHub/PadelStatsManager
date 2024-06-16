@@ -74,6 +74,11 @@ public class Jugadores {
     @Column(name = "ruta_foto")
     private String rutaFoto;
 
+    public Jugadores(String id, String nombre) {
+        this.id = id;
+        this.nombre = nombre;
+    }
+
     public Jugadores(int posicionRanking, String variacionPuesto, int puntos, String nombre, String nacionalidad, String rutaBandera,
                      String posicionPista, Jugadores pareja, String fechaNac, double altura, String lugarNac,
                      int partidosJugados, int partidosGanados, int victoriasConsecutivas, String rutaFoto) {
