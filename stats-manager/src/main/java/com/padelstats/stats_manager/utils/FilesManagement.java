@@ -16,6 +16,7 @@ public class FilesManagement {
         }
     }
 
+
     public static List<String> readUrlsFromFile(String filename) {
         List<String> urls = new ArrayList<>();
         BufferedReader reader = null;

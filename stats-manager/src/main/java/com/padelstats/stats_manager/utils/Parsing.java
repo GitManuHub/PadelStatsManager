@@ -24,6 +24,7 @@ public class Parsing {
         }
     }
 
+
     public static String getVariacionRanking(WebDriver driver) {
         try {
             if (driver.findElement(By.cssSelector(".up")).getText() != null) {
