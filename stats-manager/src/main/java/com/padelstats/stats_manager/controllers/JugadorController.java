@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
@@ -30,7 +31,12 @@ public class JugadorController {
 
     @GetMapping("")
     public List<Jugadores> showAll() {
-        return iJugadorService.findAll();
+        List<Jugadores> jugadores = iJugadorService.findAll();
+        if (!jugadores.isEmpty()) {
+            jugadores.sort(Comparator.comparingInt(Jugadores::getPosicionRanking));
+        }
+
+        return jugadores;
     }
 
     @GetMapping(value = "/{id}", produces = "application/json")
